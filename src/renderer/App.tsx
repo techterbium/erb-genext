@@ -1,4 +1,7 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { MemoryRouter as Router, Routes, Route, Link } from 'react-router-dom';
+
+import VideoPlayer from './components/VideoPlayer';
 import icon from '../../assets/icon.svg';
 import './App.css';
 
@@ -8,43 +11,33 @@ const Hello = () => {
       <div className="Hello">
         <img width="200" alt="icon" src={icon} />
       </div>
-      <h1>electron-react-boilerplate</h1>
-      <div className="Hello">
-        <a
-          href="https://electron-react-boilerplate.js.org/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">
-            <span role="img" aria-label="books">
-              📚
-            </span>
-            Read our docs
-          </button>
-        </a>
-        <a
-          href="https://github.com/sponsors/electron-react-boilerplate"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">
-            <span role="img" aria-label="books">
-              🙏
-            </span>
-            Donate
-          </button>
-        </a>
-      </div>
+      <h1>Electrea 3.0</h1>
     </div>
   );
 };
 
+const Login = () => {
+  useEffect(() => {
+    window.electron.ipcRenderer.sendMessage('login-flow', true);
+  }, []);
+  return <div className="Hello">Login</div>;
+};
+
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Hello />} />
-      </Routes>
-    </Router>
+    <div>
+      <Router>
+        <nav>
+          <Link to="/">Homepage</Link>
+          <Link to="login">Login</Link>
+          <Link to="video">VideoPlayer</Link>
+        </nav>
+        <Routes>
+          <Route path="/" element={<Hello />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/video" element={<VideoPlayer />} />
+        </Routes>
+      </Router>
+    </div>
   );
 }

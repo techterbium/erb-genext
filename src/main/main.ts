@@ -15,6 +15,25 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
+import {
+  getLicenseInfo,
+  getValidLicensesForLicensePage,
+  isValidationDue,
+  routeEngine,
+  syncLocalLicenseStore,
+  bindLicense,
+  addLocalCategory,
+  getVersion,
+} from './utils/electrea';
+
+import { isInternetConnected, getSystemID } from './utils/system';
+import { isUserLogged } from './utils/auth';
+import { getProviderUserInfo, getUserLicenses } from './utils/api';
+
+import LOG from './utils/log';
+
+import LoginFlow from './login/login';
+
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -23,12 +42,93 @@ class AppUpdater {
   }
 }
 
+function inspectArguments() {
+  const args = process.argv;
+  args.forEach((value) => {
+    if (
+      value.includes('debug') ||
+      value.includes('remote-debugging-port') ||
+      value.includes('inspect')
+    ) {
+      app.quit();
+    }
+  });
+}
+
 let mainWindow: BrowserWindow | null = null;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
   console.log(msgTemplate(arg));
   event.reply('ipc-example', msgTemplate('pong'));
+});
+
+ipcMain.on('home-page-visible', (evt, showFile) => {
+  // menuBuilder.buildMenu(showFile);
+});
+
+ipcMain.on('get-system-details', (evt) => {
+  console.log('get-system-details');
+  Promise.all([
+    isInternetConnected(),
+    getLicenseInfo(),
+    getSystemID(),
+    isValidationDue(),
+  ])
+    .then((values) => {
+      const [a, b, c, d] = values;
+      console.log('abcd', a, b, c, d);
+      routeEngine(a, b, c, d)
+        .then((retVal) => {
+          console.log('get-system-details', retVal);
+          evt.reply('get-system-details-response', retVal);
+        })
+        .catch((err) => {
+          LOG.info('Error while routing', JSON.stringify(err));
+          evt.reply('get-system-details-response', err);
+        });
+    })
+    .catch((err) => {
+      LOG.info('Error while reading system details', JSON.stringify(err));
+      evt.reply('get-system-details-response', err);
+    });
+});
+
+ipcMain.on('login-flow', async (evt) => {
+  console.log('login-flow-started');
+  const cb = (usr: any) => {
+    evt.reply('login-flow-response', usr);
+  };
+  LoginFlow(cb);
+});
+
+ipcMain.on('license-page', async (evt) => {
+  console.log('license-page-ipcMain');
+  const user = await getProviderUserInfo();
+  console.log('LicPage-usr', user);
+  const licenses = await getUserLicenses(user.uid);
+  console.log('LicPage-lic', licenses);
+  await syncLocalLicenseStore(licenses);
+  LOG.info('Licenses synced up successfully.');
+  const validLics = await getValidLicensesForLicensePage(licenses);
+  evt.reply('license-page-response', { user, licenses: validLics });
+});
+
+ipcMain.on('get-user-log-status', async (evt) => {
+  const user = isUserLogged();
+  evt.reply('get-user-log-status-resp', user);
+});
+
+ipcMain.on('bind-license', async (evt, lic, user) => {
+  console.log('main-binding license', lic.id);
+  const mlic = await bindLicense(user.uid, lic.id);
+  console.log('mlic', mlic);
+  addLocalCategory(mlic);
+  evt.reply('bind-license-response', mlic);
+});
+
+ipcMain.on('get-version', async (evt) => {
+  evt.reply('get-version-response', getVersion());
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -127,6 +227,7 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
+    inspectArguments();
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
