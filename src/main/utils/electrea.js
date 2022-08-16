@@ -21,9 +21,17 @@ const getSmartKey = (uid, lid) => {
 };
 
 const addNewKeys = (keys, key) => {
-  const storedKeys = CFG.getKey(CONST.KEYS.ENCKEYS) || {};
-  const dkeys = JSON.parse(new SimpleCrypto(key).decrypt(keys));
-  CFG.setKey(CONST.KEYS.ENCKEYS, { ...storedKeys, ...dkeys });
+  try {
+    const storedKeys = CFG.getKey(CONST.KEYS.ENCKEYS) || {};
+    console.log('keys', keys, key);
+    console.log('storedKeys', storedKeys);
+    const dkeys = JSON.parse(new SimpleCrypto(key).decrypt(keys));
+    console.log('dkeys', dkeys);
+    CFG.setKey(CONST.KEYS.ENCKEYS, { ...storedKeys, ...dkeys });
+  } catch (e) {
+    console.trace();
+    console.error('Error adding new keys');
+  }
 };
 
 const addNewLocalLicense = (lic) => {
@@ -36,13 +44,16 @@ const addNewLocalLicense = (lic) => {
 export const bindLicense = async (uid, lid) => {
   try {
     const sysinfo = await SYS.getSystemInfo();
+    console.log(sysinfo);
     const lic = await API.bindLicense(uid, lid, sysinfo);
     LOG.info(`Binding licence ${lid} for ${uid} in ${sysinfo.system.uuid}`);
-    LOG.info('LIC AFTER BINDING', lic);
+    LOG.info('LIC AFTER BINDING', JSON.stringify(lic));
+    console.log('smart', getSmartKey(uid, lid));
     addNewKeys(lic.keys, getSmartKey(uid, lid));
     addNewLocalLicense(lic);
     return lic;
   } catch (ex) {
+    console.trace();
     LOG.error('Error binding/adding new keys to config', ex.message);
   }
   return false;
@@ -50,6 +61,8 @@ export const bindLicense = async (uid, lid) => {
 
 export const getKeyByCategory = (catID) => {
   const storedKeys = CFG.getKey(CONST.KEYS.ENCKEYS) || {};
+  console.log('catID', catID);
+  console.log('catID2', storedKeys[catID]);
   if (!storedKeys[catID]) {
     throw new Error(
       'Invalid Configuration. Contact your organization or Open an issue by clicking Help -> Submit Issue'

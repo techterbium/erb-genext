@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -24,6 +24,9 @@ import {
   bindLicense,
   addLocalCategory,
   getVersion,
+  readAsarFile,
+  isValidCategory,
+  getKeyByCategory,
 } from './utils/electrea';
 
 import { isInternetConnected, getSystemID } from './utils/system';
@@ -31,6 +34,7 @@ import { isUserLogged } from './utils/auth';
 import { getProviderUserInfo, getUserLicenses } from './utils/api';
 
 import LOG from './utils/log';
+import CFG from './utils/config';
 
 import LoginFlow from './login/login';
 
@@ -94,10 +98,16 @@ ipcMain.on('get-system-details', (evt) => {
     });
 });
 
+ipcMain.on('get-config', (evt) => {
+  const d = CFG.getConfig()
+  evt.reply('get-config-resp', d);
+})
+
 ipcMain.on('login-flow', async (evt) => {
   console.log('login-flow-started');
   const cb = (usr: any) => {
-    evt.reply('login-flow-response', usr);
+    console.log('appuser', usr);
+    CFG.setKey('appuser', usr);
   };
   LoginFlow(cb);
 });
@@ -109,8 +119,8 @@ ipcMain.on('license-page', async (evt) => {
   const licenses = await getUserLicenses(user.uid);
   console.log('LicPage-lic', licenses);
   await syncLocalLicenseStore(licenses);
-  LOG.info('Licenses synced up successfully.');
   const validLics = await getValidLicensesForLicensePage(licenses);
+  LOG.info('Licenses synced up successfully.');
   evt.reply('license-page-response', { user, licenses: validLics });
 });
 
@@ -119,8 +129,9 @@ ipcMain.on('get-user-log-status', async (evt) => {
   evt.reply('get-user-log-status-resp', user);
 });
 
-ipcMain.on('bind-license', async (evt, lic, user) => {
-  console.log('main-binding license', lic.id);
+ipcMain.on('bind-license', async (evt, args) => {
+  const [lic, user] = args;
+  console.log('main-binding license', lic);
   const mlic = await bindLicense(user.uid, lic.id);
   console.log('mlic', mlic);
   addLocalCategory(mlic);
@@ -198,7 +209,26 @@ const createWindow = async () => {
     mainWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
+  const openFielHandler = async () => {
+    const files = await dialog.showOpenDialog(mainWindow, {
+      title: 'Choose asar file',
+      filters: [{ name: 'Asar', extensions: ['asar'] }],
+    });
+    console.log(files);
+    if (files && !files.canceled) {
+      // actual file selected
+      const asarFile = files.filePaths[0];
+      const asarFileInfo = readAsarFile(asarFile);
+      console.log(asarFileInfo);
+      if (asarFileInfo) {
+        isValidCategory(asarFileInfo.category);
+        const keys = getKeyByCategory(asarFileInfo.category);
+        mainWindow.webContents.send('file-selected', { asarFileInfo, keys });
+      }
+    }
+  };
+
+  const menuBuilder = new MenuBuilder(mainWindow, openFielHandler);
   menuBuilder.buildMenu();
 
   // Open urls in the user's browser
@@ -229,6 +259,7 @@ app
   .then(() => {
     inspectArguments();
     createWindow();
+    console.log('total_config', CFG.getConfig());
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.

@@ -1,3 +1,5 @@
+import { Buffer } from 'buffer';
+
 const videoOpts = {
   src: '',
   type: 'application/dash+xml',

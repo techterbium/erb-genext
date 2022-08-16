@@ -7,7 +7,8 @@ import LOG from './log';
 import getStrongKey from './addon';
 
 const home = os.homedir();
-const cfgfilepath = `${home}${path.sep}.electrea${path.sep}app.cfg`;
+const electreaHome = `${home}${path.sep}.electrea`;
+const cfgfilepath = `${electreaHome}${path.sep}app.cfg`;
 
 class Config {
   crypt = null;
@@ -18,7 +19,6 @@ class Config {
     this.crypt = new SimpleCrypto(getStrongKey());
 
     try {
-      const electreaHome = `${home}${path.sep}.electrea`;
       const homeExists = fs.existsSync(electreaHome);
       if (!homeExists) {
         LOG.info('config location is being created');
@@ -48,6 +48,7 @@ class Config {
       plainMessage = this.crypt.decrypt(cryptedMessage);
       return JSON.parse(plainMessage);
     } catch (e) {
+      console.trace();
       LOG.error(`ERROR CODE 003:${e.message}`);
       LOG.error('plainMessage', plainMessage);
     }
@@ -82,6 +83,6 @@ class Config {
   }
 }
 
-const cfg = new Config();
+const CFG = new Config();
 
-export default cfg;
+export default CFG;

@@ -4,6 +4,7 @@ import {
   shell,
   BrowserWindow,
   MenuItemConstructorOptions,
+  dialog,
 } from 'electron';
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
@@ -14,8 +15,11 @@ interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
 
-  constructor(mainWindow: BrowserWindow) {
+  openFileHandler: any;
+
+  constructor(mainWindow: BrowserWindow, openFileHandler: any) {
     this.mainWindow = mainWindow;
+    this.openFileHandler = openFileHandler;
   }
 
   buildMenu(): Menu {
@@ -183,13 +187,39 @@ export default class MenuBuilder {
       ],
     };
 
+    const subFileMenu: MenuItemConstructorOptions = {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open File',
+          accelerator: 'CommandOrControl+O',
+          click: () => this.openFileHandler(),
+        },
+        { type: 'separator' },
+        {
+          label: 'Close',
+          accelerator: 'Command+W',
+          click: () => {
+            this.mainWindow.close();
+          },
+        },
+      ],
+    };
+
     const subMenuView =
       process.env.NODE_ENV === 'development' ||
       process.env.DEBUG_PROD === 'true'
         ? subMenuViewDev
         : subMenuViewProd;
 
-    return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow, subMenuHelp];
+    return [
+      subMenuAbout,
+      subFileMenu,
+      subMenuEdit,
+      subMenuView,
+      subMenuWindow,
+      subMenuHelp,
+    ];
   }
 
   buildDefaultTemplate() {
