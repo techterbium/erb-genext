@@ -99,9 +99,9 @@ ipcMain.on('get-system-details', (evt) => {
 });
 
 ipcMain.on('get-config', (evt) => {
-  const d = CFG.getConfig()
+  const d = CFG.getConfig();
   evt.reply('get-config-resp', d);
-})
+});
 
 ipcMain.on('login-flow', async (evt) => {
   console.log('login-flow-started');
