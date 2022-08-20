@@ -9,7 +9,14 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  shell,
+  ipcMain,
+  dialog,
+  components,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -27,6 +34,7 @@ import {
   readAsarFile,
   isValidCategory,
   getKeyByCategory,
+  getVideoOpts,
 } from './utils/electrea';
 
 import { isInternetConnected, getSystemID } from './utils/system';
@@ -150,7 +158,7 @@ if (process.env.NODE_ENV === 'production') {
 const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
-if (isDebug) {
+if (true) {
   require('electron-debug')();
 }
 
@@ -218,12 +226,20 @@ const createWindow = async () => {
     if (files && !files.canceled) {
       // actual file selected
       const asarFile = files.filePaths[0];
+      // window.URL.createObjectURL(new File(files.filePaths[0]);
       const asarFileInfo = readAsarFile(asarFile);
-      console.log(asarFileInfo);
       if (asarFileInfo) {
         isValidCategory(asarFileInfo.category);
         const keys = getKeyByCategory(asarFileInfo.category);
-        mainWindow.webContents.send('file-selected', { asarFileInfo, keys });
+        const videoOpts = getVideoOpts(asarFileInfo.filePath, keys);
+        console.log('111', asarFileInfo);
+        console.log('100', keys);
+        console.log('123', JSON.stringify(videoOpts));
+        mainWindow.webContents.send('file-selected', {
+          asarFileInfo,
+          keys,
+          videoOpts,
+        });
       }
     }
   };
@@ -256,7 +272,9 @@ app.on('window-all-closed', () => {
 
 app
   .whenReady()
-  .then(() => {
+  .then(async () => {
+    await components.whenReady();
+    console.log('components ready:', components.status());
     inspectArguments();
     createWindow();
     console.log('total_config', CFG.getConfig());

@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import asar from 'asar';
 import SimpleCrypto from 'simple-crypto-js';
 
@@ -61,8 +62,6 @@ export const bindLicense = async (uid, lid) => {
 
 export const getKeyByCategory = (catID) => {
   const storedKeys = CFG.getKey(CONST.KEYS.ENCKEYS) || {};
-  console.log('catID', catID);
-  console.log('catID2', storedKeys[catID]);
   if (!storedKeys[catID]) {
     throw new Error(
       'Invalid Configuration. Contact your organization or Open an issue by clicking Help -> Submit Issue'
@@ -223,4 +222,39 @@ export const routeEngine = async (
 
 export const LOG_VALUES = (str, obj) => {
   console.log(str, obj);
+};
+
+export const getVideoOpts = (src, keys) => {
+  const videoOpts = {
+    src: '',
+    type: 'application/dash+xml',
+    keySystemOptions: [
+      {
+        name: 'org.w3.clearkey',
+        options: {
+          clearkeys: {},
+        },
+      },
+    ],
+  };
+
+  videoOpts.src = src;
+  const k = Buffer.from(keys.key, 'base64')
+    .toString('base64')
+    .replace(/=/g, '');
+  // const k = Buffer.from(
+  //   Buffer.from(keys.key, 'utf8').toString('base64'),
+  //   'base64'
+  // ).toString();
+  const i = Buffer.from(keys.kid, 'base64')
+    .toString('base64')
+    .replace(/=/g, '');
+  // const i = Buffer.from(
+  //   Buffer.from(keys.kid, 'utf8').toString('base64'),
+  //   'base64'
+  // ).toString();
+  videoOpts.keySystemOptions[0].options.clearkeys = {};
+  videoOpts.keySystemOptions[0].options.clearkeys[i] = k;
+  console.log('videoOpts', videoOpts);
+  return videoOpts;
 };

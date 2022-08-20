@@ -11,23 +11,26 @@ import VideoPlayer from './components/VideoPlayer';
 import icon from '../../assets/icon.svg';
 import './App.css';
 import Licenses from './views/Licenses';
+import DashPlayer from './components/DashPlayer';
+import FDashPlayer from './components/FDashPlayer';
+import EDashPlayer from './components/eDashPlayer';
 
 const Hello = () => {
-  const [file, setFile] = useState(null);
-  const [keys, setKeys] = useState(null);
+  const [rsp, setResp] = useState(null);
   const nav = useNavigate();
 
-  if (file) {
-    console.log('Hello', file, keys);
-    nav('/video', { state: { file, keys } });
+  if (rsp) {
+    const { asarFileInfo, keys, videoOpts } = rsp;
+    console.log('Hello', asarFileInfo, keys, videoOpts);
+    nav('/dash', { state: { file: asarFileInfo, keys, videoOpts } });
   }
 
   useEffect(() => {
     window.electron.ipcRenderer.once('file-selected', (resp) => {
       console.log('resp', resp);
-      const { asarFileInfo, keys } = resp;
-      setFile(asarFileInfo);
-      setKeys(keys);
+      // setFile(asarFileInfo);
+      // setKeys(keys);
+      setResp(resp);
     });
   }, []);
 
@@ -68,14 +71,16 @@ export default function App() {
           <Link to="/">Homepage</Link>
           <Link to="login">Login</Link>
           <Link to="licenses">Licenses</Link>
-          <Link to="config">Config</Link>
+          <Link to="dash">Dash</Link>
+          <Link to="edash">eDash</Link>
           <Link to="video">VideoPlayer</Link>
         </nav>
         <Routes>
-          <Route index path="/" element={<Hello />} />
+          <Route path="/" element={<Hello />} />
           <Route path="/login" element={<Login />} />
           <Route path="/licenses" element={<Licenses />} />
-          <Route path="/config" element={<Config />} />
+          <Route path="/dash" element={<DashPlayer />} />
+          <Route path="/edash" element={<EDashPlayer />} />
           <Route path="/video" element={<VideoPlayer />} />
         </Routes>
       </Router>

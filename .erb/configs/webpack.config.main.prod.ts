@@ -68,8 +68,6 @@ const configuration: webpack.Configuration = {
       deadCodeInjectionThreshold: 0.5,
       debugProtection: true,
       selfDefending: true,
-      controlFlowFlattening: true,
-      controlFlowFlatteningThreshold: 0.75,
     }),
   ],
 

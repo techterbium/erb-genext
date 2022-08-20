@@ -21,7 +21,9 @@ const getVideoOpts = (src, keys) => {
   const i = Buffer.from(keys.kid, 'base64')
     .toString('base64')
     .replace(/=/g, '');
+  videoOpts.keySystemOptions[0].options.clearkeys = {};
   videoOpts.keySystemOptions[0].options.clearkeys[i] = k;
+  console.log(videoOpts);
   return videoOpts;
 };
 

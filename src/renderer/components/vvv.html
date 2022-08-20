@@ -1,0 +1,97 @@
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/2.1.0/shaka-player.compiled.js"></script>
+  <title>DASH Player (shaka)</title>
+  <script>
+    var video = getURLParam(document.location.href, "video"); // 0..n
+    if (video == "") video = "1";
+    var manifestUrl =
+      video == "1" ? 'https://m.dtv.fi/dash/dasherh264/drm/manifest_clearkey.mpd' :
+      video == "2" ? 'https://m.dtv.fi/dash/dasherh264/manifest.mpd' : // nodrm
+      video == "12" ? 'https://m.dtv.fi/dash/dasherh264/drm2/manifest.mpd' :
+      video == "13" ? 'https://m.dtv.fi/dash/dasherh264/drm3/manifest.mpd' :
+      video == "21" ? 'https://m.dtv.fi/dash/dasherh264v2/drm/manifest_clearkey.mpd' : // new ffmpeg,mp4box,clearkeydrm
+      video == "2f" ? 'https://m.dtv.fi/dash/dasherh264v2/manifest.mpd' : // new ffmpeg,mp4box,nodrm(free)
+      "";
+    var laUrl = 'https://m.dtv.fi/dash/laurl_ck.php';
+
+    function initApp() {
+      // Install built-in polyfills to patch browser incompatibilities.
+      shaka.polyfill.installAll();
+
+      // Check to see if the browser supports the basic APIs Shaka needs.
+      if (shaka.Player.isBrowserSupported()) {
+        // Everything looks good!
+        initPlayer();
+      } else {
+        // This browser does not have the minimum set of APIs we need.
+        console.error('Browser not supported!');
+      }
+    }
+
+    function initPlayer() {
+      var video = document.getElementById('video');
+      var player = new shaka.Player(video);
+
+      player.configure({
+        drm: {
+          servers: {
+            'org.w3.clearkey': laUrl
+          }
+          //,clearKeys: { //'kid': 'key' }
+        }
+      });
+
+      // Attach player to the window to make it easy to access in the JS console.
+      window.player = player;
+
+      // Listen for error events.
+      player.addEventListener('error', onErrorEvent);
+
+      // Try to load a manifest.
+      // This is an asynchronous process.
+      player.load(manifestUrl).then(function () {
+        // This runs if the asynchronous load is successful.
+        console.log('The video has now been loaded!');
+      }).catch(onError); // onError is executed if the asynchronous load fails.
+    }
+
+    function onErrorEvent(event) {
+      // Extract the shaka.util.Error object from the event.
+      onError(event.detail);
+    }
+
+    function onError(error) {
+      console.error('Error code', error.code, 'object', error);
+      alert("ErrorCode=" + error.code);
+    }
+
+    function getURLParam(strURL, strKey) {
+      // http://mywebapp/do.url?key1=val1&key2=val2
+      var idx = strURL != null ? strURL.indexOf('?') : -1;
+      if (idx < 0) return ""; // no params
+
+      // "&key1=val1&key2=val2&"
+      strURL = "&" + strURL.substring(idx + 1) + "&";
+      idx = strURL.indexOf("&" + strKey + "=");
+      if (idx < 0) return ""; // param not found
+
+      // "&key1=val1&key2=val2&" -> "val1&key2=val2&" -> "val1"
+      strURL = strURL.substring(idx + strKey.length + 2);
+      idx = strURL.indexOf("&");
+      return strURL.substring(0, idx);
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
+  </script>
+</head>
+
+<body>
+  <div>
+    <b>ShakaPlayer, ClearKey DRM</b><br>
+    <video id="video" autoplay="" controls="" src="blob:https://m.dtv.fi/f3b4044f-c903-4393-a6e1-9d768dab6076"
+      width="640"></video>
+  </div>
+
+</body>
