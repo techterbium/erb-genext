@@ -21,7 +21,8 @@ export default class EDashPlayer extends React.Component {
         },
       },
     };
-    const url = '/Users/vikky/videos/first/01krishna.asar/stream.mpd';
+    // const url = '/Users/vikky/videos/first/01krishna.asar/stream.mpd';
+    const url = 'C:\\Users\\vikra\\vids\\01krishna.asar\\stream.mpd';
     // const url = '/Users/vikky/videos/first/01RuralReconstruction.asar/stream.mpd';
     // const url =
     //   'https://media.axprod.net/TestVectors/v7-MultiDRM-SingleKey/Manifest_1080p_ClearKey.mpd';
